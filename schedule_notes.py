@@ -12,7 +12,12 @@ from typing import Iterable
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from xiaohongshu_fetcher import Note, XiaoHongShuClient, resilient_search
+from xiaohongshu_fetcher import (
+    Note,
+    SupportsNoteSearch,
+    XiaoHongShuClient,
+    resilient_search,
+)
 
 DEFAULT_TIMEZONE = "Asia/Shanghai"
 
@@ -56,6 +61,14 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         default="INFO",
         help="Logging level (DEBUG, INFO, WARNING...).",
     )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help=(
+            "Run the scheduler in demo mode without network requests. "
+            "Generates sample notes so the workflow can be tested without a cookie."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -66,6 +79,35 @@ def ensure_cookie(args: argparse.Namespace) -> str:
             "A XiaoHongShu cookie is required. Pass --cookie or set XHS_COOKIE."
         )
     return cookie
+
+
+class _DemoXiaoHongShuClient:
+    """Return canned XiaoHongShu notes for demonstration purposes."""
+
+    def search_notes(
+        self,
+        keyword: str,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> list[Note]:
+        sample_notes = [
+            Note(
+                note_id="demo-001",
+                title=f"示例笔记：{keyword} 的趋势洞察",
+                desc="这是一条用于演示的笔记，展示如何保存抓取结果。",
+                liked_count=520,
+                url="https://www.xiaohongshu.com/explore/demo-001",
+            ),
+            Note(
+                note_id="demo-002",
+                title=f"{keyword} 营销案例分享",
+                desc="演示模式下的第二条笔记，用于说明 JSON 输出格式。",
+                liked_count=214,
+                url="https://www.xiaohongshu.com/explore/demo-002",
+            ),
+        ]
+        return sample_notes[:page_size]
 
 
 def ensure_timezone(name: str):
@@ -95,7 +137,7 @@ def save_notes(
 
 def fetch_job(
     keyword: str,
-    client: XiaoHongShuClient,
+    client: SupportsNoteSearch,
     output_dir: Path,
     tzinfo: datetime_tzinfo,
 ) -> None:
@@ -121,9 +163,15 @@ def main(argv: Iterable[str] | None = None) -> None:
     setup_logging(args.log_level)
     tz = ensure_timezone(args.timezone)
     output_dir = ensure_output_dir(args.output_dir)
-    cookie = ensure_cookie(args)
-
-    client = XiaoHongShuClient(cookie=cookie)
+    if args.demo:
+        logger = logging.getLogger("schedule_notes")
+        logger.warning(
+            "Running in demo mode. Sample data will be generated instead of real network requests."
+        )
+        client: SupportsNoteSearch = _DemoXiaoHongShuClient()
+    else:
+        cookie = ensure_cookie(args)
+        client = XiaoHongShuClient(cookie=cookie)
 
     scheduler = BlockingScheduler(timezone=tz)
     scheduler.add_job(

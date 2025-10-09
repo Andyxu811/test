@@ -41,6 +41,11 @@ because XiaoHongShu does not provide an open unauthenticated API.
      ```
    - `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录。
    - 之后脚本会在每天北京时间 08:00 自动再次抓取，生成名为 `<关键词>_YYYYMMDD_HHMMSS.json` 的文件，包含笔记的 ID、标题、摘要、点赞数和链接等信息。
+   - 如果你暂时没有可用的 Cookie，只想演示运行流程，可以加上 `--demo` 参数：
+     ```bash
+     python schedule_notes.py "咖啡" --run-now --demo
+     ```
+     演示模式会跳过真实的网络请求，输出两条示例笔记，方便确认保存路径与文件格式。
 
 完成以上步骤后，你就能在电脑上定期获取并保存小红书相关关键词的笔记数据，为市场调研、内容监控或数据分析提供支持。
 
@@ -59,6 +64,9 @@ line when running the scheduler.
 
 ```bash
 python schedule_notes.py "咖啡" --run-now --output-dir data
+
+# 仅做流程演示，可添加 --demo 生成示例数据
+python schedule_notes.py "咖啡" --run-now --demo
 ```
 
 The command above will:

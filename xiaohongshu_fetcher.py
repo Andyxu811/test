@@ -10,7 +10,7 @@ import dataclasses
 import json
 import logging
 import time
-from typing import Iterable, List, Sequence
+from typing import Iterable, List, Protocol, Sequence
 
 import requests
 
@@ -26,6 +26,19 @@ class Note:
     desc: str
     liked_count: int
     url: str
+
+
+class SupportsNoteSearch(Protocol):
+    """Protocol describing objects that can search for notes."""
+
+    def search_notes(
+        self,
+        keyword: str,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> List["Note"]:
+        ...
 
 
 class XiaoHongShuClient:
@@ -171,7 +184,7 @@ def backoff_delays(initial: float = 1.0, maximum: float = 60.0) -> Iterable[floa
 
 
 def resilient_search(
-    client: XiaoHongShuClient,
+    client: SupportsNoteSearch,
     keyword: str,
     *,
     retries: int = 3,
@@ -197,4 +210,10 @@ def resilient_search(
     raise XiaoHongShuError("Failed to fetch notes") from last_error
 
 
-__all__ = ["Note", "XiaoHongShuClient", "resilient_search", "XiaoHongShuError"]
+__all__ = [
+    "Note",
+    "SupportsNoteSearch",
+    "XiaoHongShuClient",
+    "resilient_search",
+    "XiaoHongShuError",
+]
