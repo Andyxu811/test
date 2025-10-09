@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import os
@@ -9,10 +10,15 @@ from datetime import datetime, tzinfo as datetime_tzinfo
 from pathlib import Path
 from typing import Iterable
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.cron import CronTrigger
+try:  # pragma: no cover - optional dependency for demo mode
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    from apscheduler.triggers.cron import CronTrigger
+except ModuleNotFoundError:  # pragma: no cover - handled at runtime
+    BlockingScheduler = None  # type: ignore
+    CronTrigger = None  # type: ignore
 
 from xiaohongshu_fetcher import (
+    DemoXiaoHongShuClient,
     Note,
     SupportsNoteSearch,
     XiaoHongShuClient,
@@ -89,35 +95,6 @@ def ensure_cookie(args: argparse.Namespace) -> str:
     return cookie
 
 
-class _DemoXiaoHongShuClient:
-    """Return canned XiaoHongShu notes for demonstration purposes."""
-
-    def search_notes(
-        self,
-        keyword: str,
-        *,
-        page: int = 1,
-        page_size: int = 20,
-    ) -> list[Note]:
-        sample_notes = [
-            Note(
-                note_id="demo-001",
-                title=f"示例笔记：{keyword} 的趋势洞察",
-                desc="这是一条用于演示的笔记，展示如何保存抓取结果。",
-                liked_count=520,
-                url="https://www.xiaohongshu.com/explore/demo-001",
-            ),
-            Note(
-                note_id="demo-002",
-                title=f"{keyword} 营销案例分享",
-                desc="演示模式下的第二条笔记，用于说明 JSON 输出格式。",
-                liked_count=214,
-                url="https://www.xiaohongshu.com/explore/demo-002",
-            ),
-        ]
-        return sample_notes[:page_size]
-
-
 def ensure_timezone(name: str):
     from zoneinfo import ZoneInfo
 
@@ -138,7 +115,7 @@ def save_notes(
     timestamp = datetime.now(tz=tzinfo).strftime("%Y%m%d_%H%M%S")
     filename = f"{keyword}_{timestamp}.json"
     target = output_dir / filename
-    payload = [note.__dict__ for note in notes]
+    payload = [dataclasses.asdict(note) for note in notes]
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return target
 
@@ -176,7 +153,7 @@ def main(argv: Iterable[str] | None = None) -> None:
         logger.warning(
             "Running in demo mode. Sample data will be generated instead of real network requests."
         )
-        client: SupportsNoteSearch = _DemoXiaoHongShuClient()
+        client = DemoXiaoHongShuClient()
     else:
         cookie = ensure_cookie(args)
         client = XiaoHongShuClient(cookie=cookie)
@@ -189,6 +166,11 @@ def main(argv: Iterable[str] | None = None) -> None:
             "Fetch finished. Notes saved locally under %s", output_dir.resolve()
         )
         return
+
+    if BlockingScheduler is None or CronTrigger is None:
+        raise SystemExit(
+            "APScheduler is required for scheduling. Install it via 'pip install APScheduler'."
+        )
 
     scheduler = BlockingScheduler(timezone=tz)
     scheduler.add_job(

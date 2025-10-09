@@ -3,10 +3,17 @@ This is my first project
 
 ## XiaoHongShu Keyword Scheduler
 
-This repository now includes a small utility that can fetch notes from XiaoHongShu
-(`小红书`) for a given keyword every day at 8 AM (Asia/Shanghai by default). The
-script relies on a valid logged-in cookie string gathered from a browser session
-because XiaoHongShu does not provide an open unauthenticated API.
+This repository now includes two complementary utilities that work with XiaoHongShu
+(`小红书`) search results:
+
+1. **`collect_notes.py`** – fetch a keyword immediately, sort the notes by
+   popularity (likes) and export them as JSON/Markdown/CSV snapshots for
+   analysis.
+2. **`schedule_notes.py`** – schedule an automatic fetch that runs every day at
+   8 AM (Asia/Shanghai by default) and keeps saving JSON snapshots locally.
+
+Both scripts rely on a valid logged-in cookie string gathered from a browser
+session because XiaoHongShu does not provide an open unauthenticated API.
 
 ### 中文说明
 
@@ -35,21 +42,27 @@ because XiaoHongShu does not provide an open unauthenticated API.
      ```
      也可以在运行脚本时通过命令行参数 `--cookie` 临时传入。
 3. **运行脚本并保存到本地**
-   - 如果只想立即抓取一次并把结果保存到本地（不启动长期调度），可以使用：
+   - 如果只想立即抓取一次并把结果整理成 JSON/Markdown/CSV 三种格式，可以运行：
      ```bash
-     python schedule_notes.py "咖啡" --once --output-dir data
+     python collect_notes.py "咖啡" --pages 3 --page-size 20 --output-dir reports
      ```
-     命令执行后会在当前电脑的 `data/` 目录生成一个 JSON 文件，名称形如 `<关键词>_YYYYMMDD_HHMMSS.json`，包含笔记的 ID、标题、摘要、点赞数和链接等信息。
-   - 若需要在本地持续每天定时抓取，则可以：
+     该命令会抓取前 3 页共 60 条与 “咖啡” 相关的笔记，按照点赞数排序后生成
+     `reports/咖啡_YYYYMMDD_HHMMSS.json/.md/.csv` 三个文件，方便后续分析。
+     还可以通过 `--formats json markdown` 控制导出格式，或用 `--limit 30`
+     限制导出的笔记数量。
+   - 如果希望在本地持续每天定时抓取，则可以：
      ```bash
      python schedule_notes.py "咖啡" --run-now --output-dir data
      ```
-     `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录，随后脚本会在每天北京时间 08:00 自动再次抓取并继续保存到本地。
-   - 如果你暂时没有可用的 Cookie，只想演示运行流程，可以加上 `--demo` 参数：
+     `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录，随后脚本会在每天
+     北京时间 08:00 自动再次抓取并继续保存到本地。
+   - 如果你暂时没有可用的 Cookie，只想演示运行流程，可以在任意脚本中加上
+     `--demo` 参数：
      ```bash
+     python collect_notes.py "咖啡" --demo
      python schedule_notes.py "咖啡" --once --demo
      ```
-     演示模式会跳过真实的网络请求，输出两条示例笔记，方便确认保存路径与文件格式。
+     演示模式会跳过真实的网络请求，输出几条示例笔记，方便确认保存路径与文件格式。
 
 完成以上步骤后，你就能在电脑上定期获取并保存小红书相关关键词的笔记数据，为市场调研、内容监控或数据分析提供支持。
 
@@ -67,21 +80,23 @@ line when running the scheduler.
 ### Usage
 
 ```bash
-# 立即抓取一次并保存到当前机器的 data/ 目录
-python schedule_notes.py "咖啡" --once --output-dir data
+# 立即抓取一次并整理导出为 JSON + Markdown
+python collect_notes.py "咖啡" --pages 2 --formats json markdown
 
 # 运行调度器：立即抓取一次，并在每天 08:00 自动保存到本地
 python schedule_notes.py "咖啡" --run-now --output-dir data
 
 # 仅做流程演示，可添加 --demo 生成示例数据
+python collect_notes.py "咖啡" --demo
 python schedule_notes.py "咖啡" --once --demo
 ```
 
-The command above will:
+The example above will:
 
-1. Perform an immediate fetch for the keyword `咖啡` and store the results under
-   the `data/` folder.
+1. Fetch up to two pages of notes for the keyword `咖啡`, sort them by likes, and
+   export JSON + Markdown reports.
 2. Schedule a recurring job that runs every day at 08:00 (Asia/Shanghai).
 
-Each run saves a JSON snapshot named `<keyword>_YYYYMMDD_HHMMSS.json` containing
-the note metadata (note ID, title, excerpt, like count, canonical URL).
+Each run of the collector saves snapshots named `<keyword>_YYYYMMDD_HHMMSS.*`
+containing the note metadata (note ID, title, excerpt, like count, canonical
+URL) together with a Markdown table that can be shared with teammates.
