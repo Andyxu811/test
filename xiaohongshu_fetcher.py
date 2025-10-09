@@ -10,9 +10,13 @@ import dataclasses
 import json
 import logging
 import time
+from datetime import datetime
 from typing import Iterable, List, Protocol, Sequence
 
-import requests
+try:  # pragma: no cover - optional dependency for demo mode
+    import requests  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - handled gracefully below
+    requests = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +67,11 @@ class XiaoHongShuClient:
         base_url: str = "https://edith.xiaohongshu.com/api/sns/web/v1/search/notes",
         user_agent: str | None = None,
     ) -> None:
+        if requests is None:
+            raise ImportError(
+                "The 'requests' package is required to use XiaoHongShuClient."
+            )
+
         if not cookie:
             raise ValueError("A valid XiaoHongShu cookie must be provided.")
 
@@ -139,6 +148,53 @@ class XiaoHongShuError(RuntimeError):
     pass
 
 
+class DemoXiaoHongShuClient:
+    """Return canned XiaoHongShu notes for demonstration purposes."""
+
+    def __init__(self) -> None:
+        # The sample dataset intentionally mirrors the structure returned by
+        # :class:`XiaoHongShuClient` so downstream code can operate without
+        # branching based on the client type.
+        now = datetime.now().strftime("%Y-%m-%d")
+        self._samples = [
+            Note(
+                note_id="demo-001",
+                title="示例笔记：品牌种草灵感",
+                desc="这是一条用于演示的小红书笔记，展示如何保存抓取结果。",
+                liked_count=520,
+                url="https://www.xiaohongshu.com/explore/demo-001",
+            ),
+            Note(
+                note_id="demo-002",
+                title="案例拆解：内容营销打法",
+                desc="演示模式下的第二条笔记，用于说明导出的字段格式。",
+                liked_count=214,
+                url="https://www.xiaohongshu.com/explore/demo-002",
+            ),
+            Note(
+                note_id="demo-003",
+                title=f"{now} 热门趋势观察",
+                desc="第三条示例笔记，帮助验证多页抓取与排序逻辑。",
+                liked_count=180,
+                url="https://www.xiaohongshu.com/explore/demo-003",
+            ),
+        ]
+
+    def search_notes(
+        self,
+        keyword: str,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> List[Note]:
+        # Reuse the same slice-based pagination logic so that demo results are
+        # deterministic and limited by ``page_size``.
+        del keyword  # keyword is unused for canned data
+        start = (page - 1) * page_size
+        end = start + page_size
+        return self._samples[start:end]
+
+
 def _parse_note_payload(payload: dict) -> List[Note]:
     """Convert the XiaoHongShu payload into :class:`Note` objects."""
 
@@ -187,6 +243,8 @@ def resilient_search(
     client: SupportsNoteSearch,
     keyword: str,
     *,
+    page: int = 1,
+    page_size: int = 20,
     retries: int = 3,
     initial_delay: float = 1.0,
 ) -> List[Note]:
@@ -194,11 +252,19 @@ def resilient_search(
 
     last_error: Exception | None = None
     delays = backoff_delays(initial_delay)
+    RequestError = Exception if requests is None else requests.RequestException
+
     for attempt in range(1, retries + 2):
         try:
-            logger.info("Fetching keyword '%s' (attempt %s)", keyword, attempt)
-            return client.search_notes(keyword)
-        except requests.RequestException as exc:  # network or HTTP errors
+            logger.info(
+                "Fetching keyword '%s' (attempt %s, page=%s, size=%s)",
+                keyword,
+                attempt,
+                page,
+                page_size,
+            )
+            return client.search_notes(keyword, page=page, page_size=page_size)
+        except RequestError as exc:  # network or HTTP errors
             last_error = exc
             delay = next(delays)
             logger.warning(
@@ -210,10 +276,50 @@ def resilient_search(
     raise XiaoHongShuError("Failed to fetch notes") from last_error
 
 
+def collect_notes_across_pages(
+    client: SupportsNoteSearch,
+    keyword: str,
+    *,
+    pages: int = 1,
+    page_size: int = 20,
+    delay_between_pages: float = 0.5,
+    retries: int = 3,
+    initial_delay: float = 1.0,
+) -> List[Note]:
+    """Fetch notes for multiple pages while deduplicating results."""
+
+    if pages < 1:
+        raise ValueError("'pages' must be at least 1")
+    if page_size < 1:
+        raise ValueError("'page_size' must be at least 1")
+
+    notes: list[Note] = []
+    seen_ids: set[str] = set()
+    for page in range(1, pages + 1):
+        page_notes = resilient_search(
+            client,
+            keyword,
+            page=page,
+            page_size=page_size,
+            retries=retries,
+            initial_delay=initial_delay,
+        )
+        for note in page_notes:
+            if note.note_id in seen_ids:
+                continue
+            seen_ids.add(note.note_id)
+            notes.append(note)
+        if page < pages and delay_between_pages > 0:
+            time.sleep(delay_between_pages)
+    return notes
+
+
 __all__ = [
     "Note",
     "SupportsNoteSearch",
     "XiaoHongShuClient",
+    "DemoXiaoHongShuClient",
     "resilient_search",
+    "collect_notes_across_pages",
     "XiaoHongShuError",
 ]
