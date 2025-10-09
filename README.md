@@ -14,19 +14,33 @@ because XiaoHongShu does not provide an open unauthenticated API.
 
 #### 如何在电脑上使用
 
+按照下面的步骤操作，就可以在本地电脑上运行这个程序：
+
 1. **准备 Python 环境**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate
+   python -m venv .venv          # 创建隔离的虚拟环境
+   source .venv/bin/activate     # 激活虚拟环境
    pip install -r requirements.txt
    ```
-2. **获取登录后的 Cookie**：在浏览器登录你的小红书账号，打开开发者工具复制请求头中的 `Cookie` 字符串，并保存到环境变量 `XHS_COOKIE` 中，或在运行脚本时通过命令行参数传入。
-3. **运行调度脚本**：例如想追踪“咖啡”相关的笔记，可以执行：
-   ```bash
-   python schedule_notes.py "咖啡" --run-now --output-dir data
-   ```
-   - `--run-now` 会立即抓取一次并保存到 `data/` 目录。
-   - 之后脚本会在每天北京时间 08:00 自动再次抓取，并生成名为 `<关键词>_YYYYMMDD_HHMMSS.json` 的文件，文件中包含笔记的 ID、标题、摘要、点赞数和链接等信息。
+2. **配置登录 Cookie**
+   - 在浏览器登录你的小红书账号，打开开发者工具（快捷键 F12），切换到“Network/网络”面板。
+   - 刷新页面，找到任意对 `www.xiaohongshu.com` 的请求，在请求头中复制完整的 `Cookie` 字符串。
+   - 将它保存到环境变量中，例如在 macOS/Linux 终端执行：
+     ```bash
+     export XHS_COOKIE='复制的 Cookie 字符串'
+     ```
+     如果是 Windows PowerShell，可以运行：
+     ```powershell
+     setx XHS_COOKIE "复制的 Cookie 字符串"
+     ```
+     也可以在运行脚本时通过命令行参数 `--cookie` 临时传入。
+3. **运行调度脚本**
+   - 假设要追踪“咖啡”相关的笔记，在终端中执行：
+     ```bash
+     python schedule_notes.py "咖啡" --run-now --output-dir data
+     ```
+   - `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录。
+   - 之后脚本会在每天北京时间 08:00 自动再次抓取，生成名为 `<关键词>_YYYYMMDD_HHMMSS.json` 的文件，包含笔记的 ID、标题、摘要、点赞数和链接等信息。
 
 完成以上步骤后，你就能在电脑上定期获取并保存小红书相关关键词的笔记数据，为市场调研、内容监控或数据分析提供支持。
 
