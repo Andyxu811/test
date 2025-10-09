@@ -34,16 +34,20 @@ because XiaoHongShu does not provide an open unauthenticated API.
      setx XHS_COOKIE "复制的 Cookie 字符串"
      ```
      也可以在运行脚本时通过命令行参数 `--cookie` 临时传入。
-3. **运行调度脚本**
-   - 假设要追踪“咖啡”相关的笔记，在终端中执行：
+3. **运行脚本并保存到本地**
+   - 如果只想立即抓取一次并把结果保存到本地（不启动长期调度），可以使用：
+     ```bash
+     python schedule_notes.py "咖啡" --once --output-dir data
+     ```
+     命令执行后会在当前电脑的 `data/` 目录生成一个 JSON 文件，名称形如 `<关键词>_YYYYMMDD_HHMMSS.json`，包含笔记的 ID、标题、摘要、点赞数和链接等信息。
+   - 若需要在本地持续每天定时抓取，则可以：
      ```bash
      python schedule_notes.py "咖啡" --run-now --output-dir data
      ```
-   - `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录。
-   - 之后脚本会在每天北京时间 08:00 自动再次抓取，生成名为 `<关键词>_YYYYMMDD_HHMMSS.json` 的文件，包含笔记的 ID、标题、摘要、点赞数和链接等信息。
+     `--run-now` 会立即抓取一次并把结果保存到 `data/` 目录，随后脚本会在每天北京时间 08:00 自动再次抓取并继续保存到本地。
    - 如果你暂时没有可用的 Cookie，只想演示运行流程，可以加上 `--demo` 参数：
      ```bash
-     python schedule_notes.py "咖啡" --run-now --demo
+     python schedule_notes.py "咖啡" --once --demo
      ```
      演示模式会跳过真实的网络请求，输出两条示例笔记，方便确认保存路径与文件格式。
 
@@ -63,10 +67,14 @@ line when running the scheduler.
 ### Usage
 
 ```bash
+# 立即抓取一次并保存到当前机器的 data/ 目录
+python schedule_notes.py "咖啡" --once --output-dir data
+
+# 运行调度器：立即抓取一次，并在每天 08:00 自动保存到本地
 python schedule_notes.py "咖啡" --run-now --output-dir data
 
 # 仅做流程演示，可添加 --demo 生成示例数据
-python schedule_notes.py "咖啡" --run-now --demo
+python schedule_notes.py "咖啡" --once --demo
 ```
 
 The command above will:

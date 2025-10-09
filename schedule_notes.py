@@ -57,6 +57,14 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Run the fetch immediately in addition to scheduling.",
     )
     parser.add_argument(
+        "--once",
+        action="store_true",
+        help=(
+            "Fetch the keyword immediately, save the snapshot locally, and exit "
+            "without starting the scheduler."
+        ),
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         help="Logging level (DEBUG, INFO, WARNING...).",
@@ -173,6 +181,15 @@ def main(argv: Iterable[str] | None = None) -> None:
         cookie = ensure_cookie(args)
         client = XiaoHongShuClient(cookie=cookie)
 
+    logger = logging.getLogger("schedule_notes")
+    if args.once:
+        logger.info("Running one-off fetch for keyword '%s'", args.keyword)
+        fetch_job(args.keyword, client, output_dir, tz)
+        logger.info(
+            "Fetch finished. Notes saved locally under %s", output_dir.resolve()
+        )
+        return
+
     scheduler = BlockingScheduler(timezone=tz)
     scheduler.add_job(
         fetch_job,
@@ -182,7 +199,6 @@ def main(argv: Iterable[str] | None = None) -> None:
         replace_existing=True,
     )
 
-    logger = logging.getLogger("schedule_notes")
     logger.info(
         "Scheduled XiaoHongShu keyword fetch for '%s' every day at 08:00 (%s)",
         args.keyword,
