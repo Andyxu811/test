@@ -1,0 +1,11 @@
+<svg width="720" height="960" viewBox="0 0 720 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="960" rx="48" fill="#FFF5E1"/>
+  <rect x="52" y="52" width="616" height="856" rx="40" fill="#FFFDF8"/>
+  <rect x="110" y="150" width="500" height="620" rx="32" fill="#E28A42"/>
+  <circle cx="508" cy="334" r="40" fill="#F7F0D1"/>
+  <path d="M286 364C346 330 422 344 466 404L506 460L434 544L384 712H286L330 568L272 462C238 400 238 390 286 364Z" fill="#143F2E"/>
+  <path d="M364 286C402.66 286 434 254.66 434 216C434 177.34 402.66 146 364 146C325.34 146 294 177.34 294 216C294 254.66 325.34 286 364 286Z" fill="#F7F0D1"/>
+  <rect x="470" y="404" width="18" height="236" rx="9" transform="rotate(24 470 404)" fill="#F7F0D1"/>
+  <text x="92" y="858" fill="#143F2E" font-size="48" font-family="Arial, sans-serif" font-weight="700">MOMENT</text>
+  <text x="92" y="910" fill="#8B6A3D" font-size="24" font-family="Arial, sans-serif">Focus Ball · Session 12</text>
+</svg>

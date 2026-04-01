@@ -1,0 +1,11 @@
+<svg width="720" height="960" viewBox="0 0 720 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="960" rx="48" fill="#E7F6F2"/>
+  <rect x="52" y="52" width="616" height="856" rx="40" fill="#FFFFFF"/>
+  <rect x="110" y="150" width="500" height="620" rx="32" fill="#9FC9B2"/>
+  <path d="M250 542C250 456 320 386 406 386C472 386 530 430 552 492" stroke="#143F2E" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="454" cy="318" r="36" fill="#F4D44D"/>
+  <circle cx="328" cy="280" r="58" fill="#143F2E"/>
+  <path d="M266 364C316 342 368 358 392 402L430 470L378 540L330 708H248L302 530L246 446C220 406 228 382 266 364Z" fill="#F1A33D"/>
+  <text x="92" y="858" fill="#143F2E" font-size="48" font-family="Arial, sans-serif" font-weight="700">MOMENT</text>
+  <text x="92" y="910" fill="#4E6F62" font-size="24" font-family="Arial, sans-serif">Split Step · Session 12</text>
+</svg>
