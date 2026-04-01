@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  COACH
+  STUDENT
+}
+
+enum StudentStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum TrainingStage {
+  INTRO_ASSESSMENT
+  FOREHAND_FOUNDATION
+  FOREHAND_STABILITY
+  COMPREHENSIVE_UPGRADE
+}
+
+enum TrainingRecordStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PhotoUsage {
+  MOMENT
+  COMPARE
+}
+
+enum CompareSide {
+  BEFORE
+  AFTER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  role         UserRole
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  coach        Coach?
+  student      Student?
+}
+
+model Coach {
+  userId      String           @id
+  displayName String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students    Student[]        @relation("PrimaryCoachStudents")
+  records     TrainingRecord[]
+}
+
+model Student {
+  id             String        @id @default(cuid())
+  userId         String        @unique
+  primaryCoachId String
+  name           String
+  nickname       String?
+  age            Int?
+  gender         String?
+  ageGroup       String?
+  trainingGoal   String?
+  notes          String?
+  startedAt      DateTime
+  stage          TrainingStage
+  stageStartedAt DateTime
+  status         StudentStatus @default(ACTIVE)
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryCoach   Coach         @relation("PrimaryCoachStudents", fields: [primaryCoachId], references: [userId], onDelete: Restrict)
+  records        TrainingRecord[]
+
+  @@index([primaryCoachId])
+  @@index([status])
+}
+
+model TrainingRecord {
+  id           String               @id @default(cuid())
+  studentId    String
+  coachId      String
+  sessionDate  DateTime
+  sessionIndex Int
+  title        String
+  trainedToday String
+  highlights   String
+  improvements String
+  nextFocus    String
+  homework     String?
+  coachComment String
+  status       TrainingRecordStatus @default(DRAFT)
+  publishedAt  DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  student      Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  coach        Coach                @relation(fields: [coachId], references: [userId], onDelete: Restrict)
+  photos       TrainingPhoto[]
+
+  @@index([studentId, status])
+  @@index([studentId, sessionDate(sort: Desc)])
+}
+
+model TrainingPhoto {
+  id             String         @id @default(cuid())
+  recordId       String
+  url            String
+  caption        String?
+  usage          PhotoUsage     @default(MOMENT)
+  focusLabel     String?
+  compareGroupId String?
+  compareSide    CompareSide?
+  sortOrder      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  record         TrainingRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId, sortOrder])
+  @@index([recordId, usage])
+  @@index([compareGroupId])
+}
